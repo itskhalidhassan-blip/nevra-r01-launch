@@ -13,6 +13,7 @@ const EXIT = CustomEase.create('nevraExit', '0.7, 0, 0.84, 0');
 const FRAME_COUNT = 451;
 const FRAME_CACHE_LIMIT = 18;
 const IDLE_FRAME_INTERVAL = 1 / 15;
+const IDLE_TICK_TOLERANCE = 0.001;
 const FRAME_MANIFEST_PATH = '/frames/hero/manifest.json';
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -497,8 +498,9 @@ function initSequenceStory(sequence, lenis) {
       return;
     }
     const elapsed = time - lastIdleTick;
-    if (elapsed < IDLE_FRAME_INTERVAL) return;
-    lastIdleTick = time - (elapsed % IDLE_FRAME_INTERVAL);
+    if (elapsed < IDLE_FRAME_INTERVAL - IDLE_TICK_TOLERANCE) return;
+    lastIdleTick += IDLE_FRAME_INTERVAL;
+    if (time - lastIdleTick > IDLE_FRAME_INTERVAL) lastIdleTick = time;
     idleFrame = modulo(idleFrame + 1, FRAME_COUNT);
     sequence.draw(idleFrame).catch(() => {});
   };
