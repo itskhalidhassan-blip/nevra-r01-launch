@@ -469,8 +469,7 @@ function initSequenceStory(sequence, lenis) {
 
   let engaged = false;
   let scrollProgress = 0;
-  const handover = { offset: 0 };
-  let handoverTween = null;
+  const handover = { offset: 0, startProgress: 0 };
   let idleFrame = sequence.paintedIndex >= 0 ? sequence.paintedIndex : 0;
   let lastIdleTick = null;
 
@@ -482,10 +481,9 @@ function initSequenceStory(sequence, lenis) {
   const engage = () => {
     if (engaged) return;
     engaged = true;
-    idleFrame = sequence.requestedIndex;
-    const rawOffset = idleFrame - scrollProgress * (FRAME_COUNT - 1);
-    handover.offset = modulo(rawOffset + FRAME_COUNT / 2, FRAME_COUNT) - FRAME_COUNT / 2;
-    handoverTween = gsap.to(handover, { offset: 0, duration: 1.35, ease: ENTER });
+    idleFrame = sequence.paintedIndex >= 0 ? sequence.paintedIndex : sequence.requestedIndex;
+    handover.startProgress = scrollProgress;
+    handover.offset = idleFrame - scrollProgress * (FRAME_COUNT - 1);
   };
 
   const idleTick = (time) => {
@@ -529,12 +527,23 @@ function initSequenceStory(sequence, lenis) {
       if (!engaged && self.progress > 0.002) engage();
       if (!engaged) return;
 
-      const frame = modulo(handover.offset + self.progress * (FRAME_COUNT - 1), FRAME_COUNT);
+      const remaining = 1 - handover.startProgress;
+      const handoverProgress = remaining <= 0
+        ? 1
+        : gsap.utils.clamp(0, 1, (self.progress - handover.startProgress) / remaining);
+      const frame = modulo(
+        handover.offset * (1 - handoverProgress) + self.progress * (FRAME_COUNT - 1),
+        FRAME_COUNT,
+      );
       sequence.draw(frame).catch(() => {});
       const skew = gsap.utils.clamp(-0.85, 0.85, self.getVelocity() / -1800);
       skewTo(skew);
     },
-    onLeave: () => skewTo(0),
+    onLeave: () => {
+      handover.offset = 0;
+      handover.startProgress = 0;
+      skewTo(0);
+    },
     onLeaveBack: () => skewTo(0),
   });
 
@@ -545,7 +554,6 @@ function initSequenceStory(sequence, lenis) {
 
   return () => {
     trigger.kill();
-    handoverTween?.kill();
     gsap.ticker.remove(idleTick);
     document.removeEventListener('keydown', onKey);
     lenis.off('scroll', onLenisScroll);
