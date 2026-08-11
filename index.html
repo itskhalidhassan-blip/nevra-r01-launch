@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta
+      name="description"
+      content="NEVRA R/01. A fictional performance GT presented as a cinematic launch concept."
+    />
+    <meta property="og:title" content="NEVRA R/01 | Form Follows Force" />
+    <meta
+      property="og:description"
+      content="A fictional performance GT presented as a cinematic launch concept."
+    />
+    <meta property="og:image" content="/media/hero-poster.webp" />
+    <title>NEVRA R/01 | Form Follows Force</title>
+    <link rel="icon" href="data:," />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=Martian+Mono:wght@100..800&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      document.documentElement.classList.remove('no-js');
+      document.documentElement.classList.add('js');
+    </script>
+  </head>
+  <body class="is-loading">
+    <a class="skip-link" href="#top">Skip to content</a>
+
+    <div class="loader" id="loader" aria-hidden="true">
+      <div class="loader__half loader__half--top">
+        <video
+          class="loader__film loader__film--top"
+          data-loader-film
+          data-src="/media/loader.mp4"
+          poster="/media/loader-poster.webp"
+          muted
+          loop
+          playsinline
+          preload="auto"
+        ></video>
+      </div>
+      <div class="loader__half loader__half--bottom">
+        <video
+          class="loader__film loader__film--bottom"
+          data-loader-film
+          data-src="/media/loader.mp4"
+          poster="/media/loader-poster.webp"
+          muted
+          loop
+          playsinline
+          preload="auto"
+        ></video>
+      </div>
+      <p class="loader__wordmark">NEVRA</p>
+      <div class="loader__line" id="loader-line">
+        <span id="loader-progress"></span>
+      </div>
+    </div>
+
+    <script>
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        window.__NEVRA_LOADER_STARTED_AT__ = performance.now();
+        document.querySelectorAll('[data-loader-film]').forEach((film) => {
+          film.src = film.dataset.src;
+          film.load();
+        });
+      }
+    </script>
+
+    <header class="site-header" id="site-header">
+      <a class="wordmark nav-link" href="#top" aria-label="NEVRA home">NEVRA</a>
+      <nav aria-label="Primary navigation">
+        <a class="nav-link" href="#specs">Specifications</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" id="vehicle" aria-labelledby="hero-title">
+        <div class="hero__stage" id="hero-stage">
+          <div class="hero__stage-inner" id="hero-stage-inner">
+            <img
+              class="hero__poster"
+              id="hero-poster"
+              src="/media/hero-poster.webp"
+              alt="Fictional obsidian performance car in a black studio with magenta and cyan powder clouds"
+              width="1280"
+              height="720"
+              fetchpriority="high"
+            />
+            <canvas class="hero__canvas" id="hero-canvas" aria-hidden="true"></canvas>
+            <div class="hero__scrim" aria-hidden="true"></div>
+
+            <div class="hero__content">
+              <p class="hero__eyebrow line-mask">
+                <span class="line-inner">Concept performance GT</span>
+              </p>
+              <h1 id="hero-title" aria-label="Form follows force">
+                <span class="display-line line-mask" data-text="FORM" aria-hidden="true">
+                  <span class="line-inner" data-scramble-text="FORM">FORM</span>
+                </span>
+                <span
+                  class="display-line line-mask"
+                  data-text="FOLLOWS FORCE"
+                  aria-hidden="true"
+                >
+                  <span class="line-inner" data-scramble-text="FOLLOWS FORCE">FOLLOWS FORCE</span>
+                </span>
+              </h1>
+              <p class="hero__copy line-mask">
+                <span class="line-inner">One complete rotation. Zero wasted motion.</span>
+              </p>
+              <div class="hero__action line-mask">
+                <a class="primary-button magnetic" href="#specs">
+                  <span class="line-inner">Explore R/01</span>
+                </a>
+              </div>
+            </div>
+
+            <p class="concept-note">Fictional vehicle / generated concept film</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="specs" id="specs" aria-labelledby="specs-title">
+        <div class="specs__intro">
+          <h2 class="line-mask" id="specs-title">
+            <span class="line-inner">Measured in force.</span>
+          </h2>
+          <p>Concept targets shaped for the R/01.</p>
+        </div>
+
+        <div class="specs__list">
+          <article class="spec" data-spec>
+            <p class="spec__value line-mask">
+              <span class="sr-only">2.7 seconds from zero to one hundred kilometres per hour</span>
+              <span class="line-inner" aria-hidden="true"><span data-counter="2.7" data-decimals="1">0.0</span><small>S</small></span>
+            </p>
+            <h3>0-100 KM/H</h3>
+          </article>
+          <article class="spec" data-spec>
+            <p class="spec__value line-mask">
+              <span class="sr-only">920 metric horsepower</span>
+              <span class="line-inner" aria-hidden="true"><span data-counter="920">0</span><small>PS</small></span>
+            </p>
+            <h3>Peak output</h3>
+          </article>
+          <article class="spec" data-spec>
+            <p class="spec__value line-mask">
+              <span class="sr-only">340 kilometres per hour</span>
+              <span class="line-inner" aria-hidden="true"><span data-counter="340">0</span><small>KM/H</small></span>
+            </p>
+            <h3>Top speed</h3>
+          </article>
+          <article class="spec" data-spec>
+            <p class="spec__value line-mask">
+              <span class="sr-only">1680 kilograms</span>
+              <span class="line-inner" aria-hidden="true"><span data-counter="1680">0</span><small>KG</small></span>
+            </p>
+            <h3>Target mass</h3>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <a class="wordmark nav-link" href="#top">NEVRA</a>
+      <p>R/01 concept</p>
+      <p>Fictional vehicle / generated film</p>
+    </footer>
+
+    <div class="custom-cursor" id="custom-cursor" aria-hidden="true"></div>
+    <div class="page-grain" aria-hidden="true"></div>
+    <div class="page-vignette" aria-hidden="true"></div>
+
+    <noscript>
+      <style>
+        .loader,
+        .hero__canvas,
+        .custom-cursor {
+          display: none !important;
+        }
+
+        body {
+          overflow: auto !important;
+        }
+      </style>
+    </noscript>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
