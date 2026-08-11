@@ -38,6 +38,7 @@ assert.match(css, /"Martian Mono"/, 'Martian Mono is the text face');
 assert.match(javascript, /desktopSequence[\s\S]*new FrameSequence/, 'frame sequence is desktop-gated');
 assert.match(javascript, /hover: hover[\s\S]*pointer: fine/, 'frame sequence requires a desktop-class pointer');
 assert.match(javascript, /FRAME_CACHE_LIMIT = 18/, 'decoded frame cache is bounded');
+assert.match(javascript, /IDLE_FRAME_INTERVAL = 1 \/ 15/, 'idle orbit runs at the native 15 fps cadence');
 assert.match(javascript, /manifest\.pack[\s\S]*readPack/, 'desktop frames load through one streamed pack');
 assert.doesNotMatch(javascript, /pendingDecodes/, 'decodes are coalesced instead of accumulating');
 assert.doesNotMatch(javascript, /elapsed < 1250/, 'loader has no forced long hold');

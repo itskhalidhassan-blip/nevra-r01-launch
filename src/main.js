@@ -12,6 +12,7 @@ const ENTER = CustomEase.create('nevraEnter', '0.16, 1, 0.3, 1');
 const EXIT = CustomEase.create('nevraExit', '0.7, 0, 0.84, 0');
 const FRAME_COUNT = 451;
 const FRAME_CACHE_LIMIT = 18;
+const IDLE_FRAME_INTERVAL = 1 / 15;
 const FRAME_MANIFEST_PATH = '/frames/hero/manifest.json';
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -470,7 +471,7 @@ function initSequenceStory(sequence, lenis) {
   const handover = { offset: 0 };
   let handoverTween = null;
   let idleFrame = sequence.paintedIndex >= 0 ? sequence.paintedIndex : 0;
-  let lastIdleTick = 0;
+  let lastIdleTick = null;
 
   const skewTo = gsap.quickTo(heroStageInner, 'skewY', {
     duration: 0.42,
@@ -487,9 +488,17 @@ function initSequenceStory(sequence, lenis) {
   };
 
   const idleTick = (time) => {
-    if (engaged || document.hidden) return;
-    if (time - lastIdleTick < 0.18) return;
-    lastIdleTick = time;
+    if (engaged || document.hidden) {
+      lastIdleTick = null;
+      return;
+    }
+    if (lastIdleTick === null) {
+      lastIdleTick = time;
+      return;
+    }
+    const elapsed = time - lastIdleTick;
+    if (elapsed < IDLE_FRAME_INTERVAL) return;
+    lastIdleTick = time - (elapsed % IDLE_FRAME_INTERVAL);
     idleFrame = modulo(idleFrame + 1, FRAME_COUNT);
     sequence.draw(idleFrame).catch(() => {});
   };
