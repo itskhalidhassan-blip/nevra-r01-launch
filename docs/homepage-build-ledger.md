@@ -29,7 +29,7 @@
 
 | ID | Exact file | Chapter / role | Status | Proof / rights | Dimensions / duration | Format / codec | Mobile | Desktop | Start -> end | Seam | Text-safe zone | Poster / fallback | Acceptance | Checksum |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| HERO-01 | `public/frames/hero/frame-0001.webp` to `frame-0451.webp` | Opening and scroll-controlled orbit | sample-approved | Concept / user-authorized generation | 1280x720, 30.041667 s source, 15 fps extraction | WebP sequence from H.264 | Unused | Native Canvas sequence | Left side -> full orbit -> left side | Continuous camera | Upper-left with black scrim | `public/media/hero-poster.webp` | Full physical orbit, stable identity, magenta/cyan light, hard highlights | Higgsfield job `974fb35d-3b24-49e2-ab95-af78bde23ef6`; source SHA-256 `8db1a8c4a44fbdb525d47c2bc02bbf00bd6a5940c3d7aeeb88ad90029862805a` |
+| HERO-01 | `public/frames/hero/packs/hero-15fps-a53863f2b971.pack` plus `manifest.json` | Opening and scroll-controlled orbit | sample-approved | Concept / user-authorized generation | 451 WebP frames, 1280x720, 30.041667 s source, 15 fps extraction | Content-addressed WebP sequence pack from H.264 | Unused | Native Canvas sequence | Left side -> full orbit -> left side | Continuous camera | Upper-left with black scrim | `public/media/hero-poster.webp` | Full physical orbit, stable identity, magenta/cyan light, hard highlights | Higgsfield job `974fb35d-3b24-49e2-ab95-af78bde23ef6`; source SHA-256 `8db1a8c4a44fbdb525d47c2bc02bbf00bd6a5940c3d7aeeb88ad90029862805a`; pack SHA-256 `a53863f2b97101ed937918ecc39d35f1dffb1ec6b647e32eb179154b7cfa143f` |
 | HERO-POSTER | `public/media/hero-poster.webp` | Immediate poster and all static fallbacks | approved | Concept / derived from HERO-01 | 1280x720 | WebP | Static-mobile | First paint and failure fallback | Stable hold | Hold | Upper-left with black scrim | Self | Same car and opening state | SHA-256 `e856806f21f12419456dbcef452799e71ad5738ebc7db4f80472380528633377` |
 | LOADER-01 | `public/media/loader.mp4` | Loader background | sample-approved | Concept / user-authorized generation | 1280x720, 5.041667 s | H.264, muted, 611 KB | Native video | Native video | Fender -> wheel -> front detail | Cut into hero through split | Center wordmark | `public/media/loader-poster.webp` | Smooth macro travel, matching paint and colored light | Higgsfield job `8114bf10-9416-4d22-83df-0bf76546764d`; SHA-256 `49519c43b2cde6f36e8fc582c136e6563fe1e05b44e4e65e0ab77634c82ad49a` |
 
@@ -41,7 +41,7 @@ Rejected media is excluded: Higgsfield job `da406242-6f03-4622-a28c-5da20d524b50
 | --- | --- | --- | --- |
 | Design read and dials | Kinetic monochrome launch film, variance 9, motion 9, density 2 | `src/styles.css` | Implemented |
 | Stack and dependencies | Vite, vanilla JavaScript, GSAP, Lenis | `package.json` | Implemented |
-| Cinematic runtime | Preloaded compressed blobs plus 18-frame decoded LRU cache | `src/main.js` | Implemented |
+| Cinematic runtime | One content-addressed 7.34 MiB WebP pack, strict manifest validation, 451 Blob slices, coalesced decoding, and an 18-frame decoded LRU cache | `src/main.js` | Implemented |
 | Header and opening clarity | NEVRA, concept label, promise, CTA | `index.html` | Implemented |
 | Chapter text choreography | Masked line reveals and one headline scramble | `src/main.js` | Implemented |
 | Services and proof | Not applicable; fictional single-product concept | `index.html` | Intentionally omitted |
@@ -54,17 +54,17 @@ Rejected media is excluded: Higgsfield job `da406242-6f03-4622-a28c-5da20d524b50
 
 | Gate | Evidence | Pass / fail | Blocker or repair |
 | --- | --- | --- | --- |
-| Mobile 360 / 390 / 430 | Static poster, full-car art direction, zero frame requests, zero horizontal overflow | Pass | |
+| Mobile 360 / 390 / 430 | Static poster, full-car art direction, zero manifest or pack requests, zero horizontal overflow | Pass | |
 | Desktop 1440 | 451 frames ready, Canvas visible, all fonts loaded, zero horizontal overflow | Pass | |
 | Forward / reverse checkpoints | Scroll 900 -> frame 98 twice; scroll 2500 -> frame 272 twice | Pass | Exact deterministic repeats |
 | Seam captures and fast jumps | First-scroll maximum circular step 1; frame 1 / 451 SSIM 0.895785 | Pass | |
 | Rotation and anchors | Full orbit reaches frame 450; keyboard CTA reaches `#specs`; counters finish at 2.7 / 920 / 340 / 1680 | Pass | |
 | Reduced motion / zero cinematic requests | No loader MP4 or frame requests; final counters visible; static poster and normal scrolling | Pass | |
-| Broken media / poster fallback | Aborted frame requests retain poster; forced media failure clears all reveal transforms and finalizes counters | Pass | |
+| Broken media / poster fallback | Stalled loader film fails open in 1.82 s; stalled pack and stalled mobile poster each fail open in 2.39 s; poster fallback and reveal cleanup remain intact | Pass | Shared absolute asset deadline is 1.6 s |
 | Keyboard / focus / links / CTA | Visible focus outline, semantic links, working skip link, working CTA | Pass | |
 | Console / page / network | Clean production-bundle reload with zero unexpected console or request failures | Pass | Forced-failure logs excluded |
-| LCP / CLS / INP / transfer / cache | Lighthouse mobile: Performance 86, Accessibility 100, Best Practices 100; FCP/LCP 3.0 s throttled, TBT 0 ms, CLS 0; cold local loader 1.51 s desktop / 1.09 s mobile; 18-bitmap decoded cache | Pass | SEO 66 is expected because the preview is intentionally `noindex` |
-| Vercel production response | Alias returns HTTP 200; HTML identifies NEVRA R/01; loader and frame 451 return correct MIME types; `X-Robots-Tag: noindex, nofollow` | Pass | Cinematic assets receive immutable cache headers |
+| LCP / CLS / INP / transfer / cache | Lighthouse mobile: Performance 88, Accessibility 100, Best Practices 100; FCP/LCP 3.0 s throttled, TBT 0 ms, CLS 0; cold local loader 1.49 s desktop / 0.84 s mobile; 18-bitmap decoded cache | Pass | SEO 66 is expected because the preview is intentionally `noindex` |
+| Vercel production response | Alias returns HTTP 200; HTML identifies NEVRA R/01; manifest and content-addressed pack return correct MIME types; `X-Robots-Tag: noindex, nofollow` | Pass | Hashed pack is immutable; manifest revalidates; media uses a one-day browser cache |
 | Proof provenance / concept labels | Visible labels and ledger | Pass | |
 
 ## Quality score
@@ -75,9 +75,9 @@ Rejected media is excluded: Higgsfield job `da406242-6f03-4622-a28c-5da20d524b50
 | Mobile-first art direction | 19 / 20 | Full-car poster at three phone widths and landscape touch gate |
 | Design craft and conversion truth | 20 / 20 | Tight two-section concept, visible fictional labels, no invented proof |
 | Motion behavior | 19 / 20 | One-frame first-input handoff, deterministic reverse scrub, reduced-motion path |
-| Performance | 17 / 20 | Zero mobile sequence requests, 1.09 s mobile loader, 86 Lighthouse performance |
+| Performance | 18 / 20 | Zero mobile sequence requests, one packed desktop transfer, 0.84 s mobile loader, 88 Lighthouse performance |
 | Accessibility and resilience | 20 / 20 | 100 Lighthouse accessibility, keyboard path, fail-open fallbacks |
-| Total | 114 / 120 | 95% |
+| Total | 115 / 120 | 96% |
 
 ## Verdict
 

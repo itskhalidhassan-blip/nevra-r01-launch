@@ -17,6 +17,21 @@
     <meta property="og:image" content="/media/hero-poster.webp" />
     <title>NEVRA R/01 | Form Follows Force</title>
     <link rel="icon" href="data:," />
+    <script>
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        window.__NEVRA_LOADER_STARTED_AT__ = performance.now();
+        window.__NEVRA_ASSET_DEADLINE_AT__ = performance.now() + 1600;
+        const loaderController = new AbortController();
+        const loaderTimeout = window.setTimeout(() => loaderController.abort(), 850);
+        window.__NEVRA_LOADER_FETCH__ = fetch('/media/loader.mp4', {
+          cache: 'force-cache',
+          signal: loaderController.signal,
+        })
+          .then((response) => (response.ok ? response.blob() : null))
+          .catch(() => null)
+          .finally(() => window.clearTimeout(loaderTimeout));
+      }
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -62,16 +77,6 @@
         <span id="loader-progress"></span>
       </div>
     </div>
-
-    <script>
-      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        window.__NEVRA_LOADER_STARTED_AT__ = performance.now();
-        document.querySelectorAll('[data-loader-film]').forEach((film) => {
-          film.src = film.dataset.src;
-          film.load();
-        });
-      }
-    </script>
 
     <header class="site-header" id="site-header">
       <a class="wordmark nav-link" href="#top" aria-label="NEVRA home">NEVRA</a>

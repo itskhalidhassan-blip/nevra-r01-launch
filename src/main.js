@@ -12,7 +12,7 @@ const ENTER = CustomEase.create('nevraEnter', '0.16, 1, 0.3, 1');
 const EXIT = CustomEase.create('nevraExit', '0.7, 0, 0.84, 0');
 const FRAME_COUNT = 451;
 const FRAME_CACHE_LIMIT = 18;
-const FRAME_PATH = (index) => `/frames/hero/frame-${String(index + 1).padStart(4, '0')}.webp`;
+const FRAME_MANIFEST_PATH = '/frames/hero/manifest.json';
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const desktopSequence = window.matchMedia('(min-width: 768px) and (hover: hover) and (pointer: fine)').matches && !reducedMotion;
@@ -28,6 +28,7 @@ const heroPoster = document.querySelector('#hero-poster');
 const heroCanvas = document.querySelector('#hero-canvas');
 const siteHeader = document.querySelector('#site-header');
 const conceptNote = document.querySelector('.concept-note');
+let loaderObjectUrl = null;
 
 const debugState = {
   frameCount: FRAME_COUNT,
@@ -62,35 +63,84 @@ class FrameSequence {
   }
 
   async preload(onProgress) {
-    const anchors = [0, FRAME_COUNT - 1, 1, 2, 3, 4, FRAME_COUNT - 2, FRAME_COUNT - 3];
-    const seen = new Set(anchors);
-    const order = [...anchors];
+    const remaining = window.__NEVRA_ASSET_DEADLINE_AT__ - performance.now();
+    if (remaining <= 0) throw new Error('Frame preload deadline expired');
 
-    for (let index = 0; index < FRAME_COUNT; index += 1) {
-      if (!seen.has(index)) order.push(index);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), remaining);
+
+    try {
+      const manifestResponse = await fetch(FRAME_MANIFEST_PATH, {
+        cache: 'no-cache',
+        signal: controller.signal,
+      });
+      if (!manifestResponse.ok) throw new Error(`Frame manifest failed with ${manifestResponse.status}`);
+
+      const manifest = await manifestResponse.json();
+      if (
+        manifest.version !== 1 ||
+        !/^packs\/hero-15fps-[a-f0-9]{12}\.pack$/.test(manifest.pack) ||
+        !Number.isInteger(manifest.bytes) ||
+        !Array.isArray(manifest.frames) ||
+        manifest.frames.length !== FRAME_COUNT
+      ) {
+        throw new Error(`Frame manifest must contain ${FRAME_COUNT} valid entries`);
+      }
+
+      const packResponse = await fetch(`/frames/hero/${manifest.pack}`, {
+        cache: 'force-cache',
+        signal: controller.signal,
+      });
+      if (!packResponse.ok) throw new Error(`Frame pack failed with ${packResponse.status}`);
+
+      const pack = await this.readPack(packResponse, onProgress);
+      let expectedOffset = 0;
+      this.blobs = manifest.frames.map((entry, index) => {
+        const [offset, length] = entry;
+        if (
+          !Number.isInteger(offset) ||
+          !Number.isInteger(length) ||
+          offset !== expectedOffset ||
+          length < 1 ||
+          offset + length > pack.size
+        ) {
+          throw new Error(`Frame ${index + 1} has an invalid pack range`);
+        }
+        expectedOffset += length;
+        return pack.slice(offset, offset + length, 'image/webp');
+      });
+      if (expectedOffset !== manifest.bytes || expectedOffset !== pack.size) {
+        throw new Error('Frame manifest does not span the complete pack');
+      }
+    } finally {
+      window.clearTimeout(timeout);
     }
 
-    let cursor = 0;
-    let completed = 0;
-    const workers = Array.from({ length: 16 }, async () => {
-      while (cursor < order.length) {
-        const position = cursor;
-        cursor += 1;
-        const index = order[position];
-        const response = await fetch(FRAME_PATH(index), { cache: 'force-cache' });
-
-        if (!response.ok) {
-          throw new Error(`Frame ${index + 1} failed with ${response.status}`);
-        }
-
-        this.blobs[index] = await response.blob();
-        completed += 1;
-        onProgress(completed / FRAME_COUNT);
-      }
-    });
-
-    await Promise.all(workers);
     await this.draw(0, true);
+  }
+
+  async readPack(response, onProgress) {
+    const total = Number(response.headers.get('content-length')) || 0;
+    if (!response.body || !total) {
+      const pack = await response.blob();
+      onProgress(1);
+      return pack;
+    }
+
+    const reader = response.body.getReader();
+    const chunks = [];
+    let received = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      received += value.byteLength;
+      onProgress(Math.min(received / total, 1));
+    }
+
+    onProgress(1);
+    return new Blob(chunks, { type: 'application/octet-stream' });
   }
 
   async decode(index) {
@@ -225,6 +275,7 @@ class FrameSequence {
       if (typeof bitmap?.close === 'function') bitmap.close();
     }
     this.bitmaps.clear();
+    this.blobs = [];
   }
 }
 
@@ -240,7 +291,7 @@ function setLoaderProgress(progress) {
   gsap.set(loaderProgress, { scaleX: gsap.utils.clamp(0, 1, progress) });
 }
 
-function videoCanPlay(video) {
+function videoCanPlay(video, timeoutMs) {
   return new Promise((resolve) => {
     if (video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
       resolve(true);
@@ -255,7 +306,7 @@ function videoCanPlay(video) {
     };
     const onReady = () => finish(true);
     const onError = () => finish(false);
-    const timeout = window.setTimeout(() => finish(false), 5000);
+    const timeout = window.setTimeout(() => finish(false), Math.max(0, timeoutMs));
 
     video.addEventListener('canplay', onReady, { once: true });
     video.addEventListener('error', onError, { once: true });
@@ -263,14 +314,21 @@ function videoCanPlay(video) {
 }
 
 async function startLoaderFilms() {
+  const loaderBlob = await window.__NEVRA_LOADER_FETCH__;
+  if (!loaderBlob) return false;
+  loaderObjectUrl = URL.createObjectURL(loaderBlob);
+
   for (const film of loaderFilms) {
     if (!film.getAttribute('src')) {
-      film.src = film.dataset.src;
+      film.src = loaderObjectUrl;
       film.load();
     }
   }
 
-  const ready = await videoCanPlay(loaderFilms[0]);
+  const ready = await videoCanPlay(
+    loaderFilms[0],
+    window.__NEVRA_ASSET_DEADLINE_AT__ - performance.now(),
+  );
   debugState.loaderVideoReady = ready;
   if (!ready) return false;
 
@@ -283,15 +341,23 @@ async function startLoaderFilms() {
   return true;
 }
 
-async function decodePoster() {
-  if (heroPoster.complete) {
-    await heroPoster.decode?.().catch(() => {});
-    return;
-  }
+function decodePoster(timeoutMs) {
+  return new Promise((resolve) => {
+    const finish = () => {
+      window.clearTimeout(timeout);
+      heroPoster.removeEventListener('load', finish);
+      heroPoster.removeEventListener('error', finish);
+      resolve();
+    };
+    const timeout = window.setTimeout(finish, Math.max(0, timeoutMs));
 
-  await new Promise((resolve) => {
-    heroPoster.addEventListener('load', resolve, { once: true });
-    heroPoster.addEventListener('error', resolve, { once: true });
+    if (heroPoster.complete) {
+      Promise.resolve(heroPoster.decode?.()).catch(() => {}).finally(finish);
+      return;
+    }
+
+    heroPoster.addEventListener('load', finish, { once: true });
+    heroPoster.addEventListener('error', finish, { once: true });
   });
 }
 
@@ -311,16 +377,18 @@ function exitLoader() {
             performance.now() - (window.__NEVRA_LOADER_STARTED_AT__ || startedAt),
           );
           loader.remove();
+          if (loaderObjectUrl) URL.revokeObjectURL(loaderObjectUrl);
+          loaderObjectUrl = null;
           resolve();
         },
       })
-      .to(loaderProgress, { scaleX: 1, duration: 0.08, ease: ENTER })
-      .to(loaderLine, { scaleX: ratio, duration: 0.16, ease: ENTER })
-      .to(wordmark, { scaleY: 0, duration: 0.14, ease: EXIT }, '<0.02')
-      .to(heroStageInner, { scale: 1, duration: 0.55, ease: ENTER }, '<')
-      .to(topHalf, { yPercent: -100, duration: 0.52, ease: EXIT }, '>-0.1')
-      .to(bottomHalf, { yPercent: 100, duration: 0.52, ease: EXIT }, '<')
-      .to(loaderLine, { scaleY: 0, duration: 0.12, ease: EXIT }, '<0.12');
+      .to(loaderProgress, { scaleX: 1, duration: 0.06, ease: ENTER })
+      .to(loaderLine, { scaleX: ratio, duration: 0.12, ease: ENTER })
+      .to(wordmark, { scaleY: 0, duration: 0.1, ease: EXIT }, '<0.02')
+      .to(heroStageInner, { scale: 1, duration: 0.4, ease: ENTER }, '<')
+      .to(topHalf, { yPercent: -100, duration: 0.38, ease: EXIT }, '>-0.08')
+      .to(bottomHalf, { yPercent: 100, duration: 0.38, ease: EXIT }, '<')
+      .to(loaderLine, { scaleY: 0, duration: 0.08, ease: EXIT }, '<0.08');
   });
 }
 
@@ -604,7 +672,7 @@ async function run() {
       sequence = null;
     }
   } else {
-    await decodePoster();
+    await decodePoster(window.__NEVRA_ASSET_DEADLINE_AT__ - performance.now());
     setLoaderProgress(1);
   }
 
@@ -633,6 +701,8 @@ async function run() {
 run().catch((error) => {
   console.error('NEVRA experience failed open.', error);
   loader?.remove();
+  if (loaderObjectUrl) URL.revokeObjectURL(loaderObjectUrl);
+  loaderObjectUrl = null;
   document.body.classList.remove('is-loading');
   gsap.set([siteHeader, conceptNote, heroStageInner], { clearProps: 'transform' });
   gsap.set(

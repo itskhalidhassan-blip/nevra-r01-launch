@@ -20,4 +20,6 @@ npm run check
 npm run build
 ```
 
+To rebuild the delivery pack from 451 numbered WebP frames: `npm run pack:frames -- /path/to/frames`.
+
 The deployment is intentionally marked `noindex`. The vehicle, specifications, and footage are fictional concept material.
