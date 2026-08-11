@@ -14,7 +14,8 @@
 | Experience extent | cinematic-first |
 | Mobile strategy | static-mobile poster, no frame-sequence requests |
 | Runtime | Canvas frames on desktop, poster on mobile and reduced motion |
-| Current status | LOCALLY VERIFIED / RELEASE READY |
+| Current status | DEPLOYED / VERIFIED |
+| Release endpoints | GitHub: `itskhalidhassan-blip/nevra-r01-launch`; Vercel: `https://nevra-r01-launch.vercel.app` |
 
 ## Evidence ledger
 
@@ -63,6 +64,7 @@ Rejected media is excluded: Higgsfield job `da406242-6f03-4622-a28c-5da20d524b50
 | Keyboard / focus / links / CTA | Visible focus outline, semantic links, working skip link, working CTA | Pass | |
 | Console / page / network | Clean production-bundle reload with zero unexpected console or request failures | Pass | Forced-failure logs excluded |
 | LCP / CLS / INP / transfer / cache | Lighthouse mobile: Performance 86, Accessibility 100, Best Practices 100; FCP/LCP 3.0 s throttled, TBT 0 ms, CLS 0; cold local loader 1.51 s desktop / 1.09 s mobile; 18-bitmap decoded cache | Pass | SEO 66 is expected because the preview is intentionally `noindex` |
+| Vercel production response | Alias returns HTTP 200; HTML identifies NEVRA R/01; loader and frame 451 return correct MIME types; `X-Robots-Tag: noindex, nofollow` | Pass | Cinematic assets receive immutable cache headers |
 | Proof provenance / concept labels | Visible labels and ledger | Pass | |
 
 ## Quality score
@@ -79,12 +81,12 @@ Rejected media is excluded: Higgsfield job `da406242-6f03-4622-a28c-5da20d524b50
 
 ## Verdict
 
-**Status:** LOCALLY VERIFIED / RELEASE READY
+**Status:** DEPLOYED / VERIFIED
 
 **Passed scope:** Seedance media generation, local implementation, structural checks, production build, rendered browser QA, performance, accessibility, and resilience.
 
 **Creative repair request:** None. The corrected hero and loader are accepted for this concept sample.
 
-**Production gaps:** Physical iOS Safari remains a final device check; repository publication and deployment verification are the active release steps.
+**Production gaps:** Physical iOS Safari remains a final device check. Vercel's optional GitHub auto-deploy connection was not granted to the current team, so future releases use the documented CLI path until that integration is enabled.
 
-**Next smallest decision:** Publish the verified commit and verify the deployed response.
+**Next smallest decision:** Review the live concept; no further build scope is open.
