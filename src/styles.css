@@ -153,6 +153,7 @@ canvas {
   position: absolute;
   left: 0;
   width: 100vw;
+  height: 100vh;
   height: 100dvh;
   max-width: none;
   object-fit: cover;
@@ -164,6 +165,7 @@ canvas {
 }
 
 .loader__film--bottom {
+  top: -50vh;
   top: -50dvh;
 }
 
@@ -271,6 +273,7 @@ canvas {
 .hero__stage,
 .hero__stage-inner {
   position: relative;
+  min-height: 100vh;
   min-height: 100dvh;
 }
 
@@ -304,11 +307,38 @@ canvas {
 }
 
 .hero__canvas {
+  opacity: 0;
   visibility: hidden;
+  transition: opacity 240ms linear;
 }
 
 .hero__canvas.is-ready {
+  opacity: 1;
   visibility: visible;
+}
+
+.hero__canvas.is-priming {
+  opacity: 0;
+  visibility: hidden;
+}
+
+html.has-touch-story .hero {
+  height: 400vh;
+  height: 400svh;
+}
+
+html.has-touch-story .hero__stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  min-height: 100vh;
+  min-height: 100svh;
+}
+
+html.has-touch-story .hero__stage-inner {
+  height: 100%;
+  min-height: 100%;
 }
 
 .hero__scrim {
@@ -568,14 +598,11 @@ canvas {
     scroll-margin-top: 0;
   }
 
-  .hero__canvas {
-    display: none;
-  }
-
   .hero__poster {
     object-fit: contain;
     object-position: center 60%;
     transform: scale(1.12);
+    transform-origin: center 60%;
   }
 
   .hero__scrim {

@@ -12,12 +12,15 @@ const ENTER = CustomEase.create('nevraEnter', '0.16, 1, 0.3, 1');
 const EXIT = CustomEase.create('nevraExit', '0.7, 0, 0.84, 0');
 const FRAME_COUNT = 451;
 const FRAME_CACHE_LIMIT = 18;
+const TOUCH_FRAME_CACHE_LIMIT = 6;
+const TOUCH_SEQUENCE_LOAD_TIMEOUT = 12000;
 const IDLE_FRAME_INTERVAL = 1 / 15;
 const IDLE_TICK_TOLERANCE = 0.001;
 const FRAME_MANIFEST_PATH = '/frames/hero/manifest.json';
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const desktopSequence = window.matchMedia('(min-width: 768px) and (hover: hover) and (pointer: fine)').matches && !reducedMotion;
+const touchSequence = window.matchMedia('(max-width: 767px), (hover: none), (pointer: coarse)').matches && !reducedMotion;
 const finePointer = window.matchMedia('(pointer: fine)').matches;
 
 const loader = document.querySelector('#loader');
@@ -34,7 +37,7 @@ let loaderObjectUrl = null;
 
 const debugState = {
   frameCount: FRAME_COUNT,
-  mode: reducedMotion ? 'reduced' : desktopSequence ? 'sequence' : 'static-mobile',
+  mode: reducedMotion ? 'reduced' : desktopSequence ? 'sequence' : touchSequence ? 'touch-sequence-loading' : 'static-mobile',
   sequenceReady: false,
   sequenceFailed: false,
   loaderVideoReady: false,
@@ -48,9 +51,13 @@ window.__NEVRA_DEBUG__ = debugState;
 const modulo = (value, base) => ((value % base) + base) % base;
 
 class FrameSequence {
-  constructor(canvas, poster) {
+  constructor(canvas, poster, { cacheLimit = FRAME_CACHE_LIMIT, fit = 'cover', mediaScale = 1, positionY = 0.5 } = {}) {
     this.canvas = canvas;
     this.poster = poster;
+    this.cacheLimit = cacheLimit;
+    this.fit = fit;
+    this.mediaScale = mediaScale;
+    this.positionY = positionY;
     this.context = canvas.getContext('2d', { alpha: false, desynchronized: true });
     this.blobs = new Array(FRAME_COUNT);
     this.bitmaps = new Map();
@@ -59,13 +66,14 @@ class FrameSequence {
     this.requestedIndex = 0;
     this.paintedIndex = -1;
     this.lastBitmap = null;
+    this.bounds = null;
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas.parentElement);
     this.resize();
   }
 
-  async preload(onProgress) {
-    const remaining = window.__NEVRA_ASSET_DEADLINE_AT__ - performance.now();
+  async preload(onProgress, timeoutMs = window.__NEVRA_ASSET_DEADLINE_AT__ - performance.now()) {
+    const remaining = timeoutMs;
     if (remaining <= 0) throw new Error('Frame preload deadline expired');
 
     const controller = new AbortController();
@@ -178,7 +186,7 @@ class FrameSequence {
   }
 
   evict(center) {
-    while (this.bitmaps.size > FRAME_CACHE_LIMIT) {
+    while (this.bitmaps.size > this.cacheLimit) {
       let furthestKey = null;
       let furthestDistance = -1;
 
@@ -248,6 +256,7 @@ class FrameSequence {
     const bounds = this.canvas.getBoundingClientRect();
     if (!bounds.width || !bounds.height) return;
 
+    this.bounds = { width: bounds.width, height: bounds.height };
     const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     this.canvas.width = Math.round(bounds.width * dpr);
     this.canvas.height = Math.round(bounds.height * dpr);
@@ -257,14 +266,18 @@ class FrameSequence {
   }
 
   paint(bitmap) {
-    const bounds = this.canvas.getBoundingClientRect();
+    const bounds = this.bounds;
+    if (!bounds) return;
     const width = bitmap.width || bitmap.naturalWidth;
     const height = bitmap.height || bitmap.naturalHeight;
-    const scale = Math.max(bounds.width / width, bounds.height / height);
+    const fitScale = this.fit === 'contain'
+      ? Math.min(bounds.width / width, bounds.height / height)
+      : Math.max(bounds.width / width, bounds.height / height);
+    const scale = fitScale * this.mediaScale;
     const drawWidth = width * scale;
     const drawHeight = height * scale;
     const x = (bounds.width - drawWidth) / 2;
-    const y = (bounds.height - drawHeight) / 2;
+    const y = (bounds.height - drawHeight) * this.positionY;
 
     this.context.fillStyle = '#000000';
     this.context.fillRect(0, 0, bounds.width, bounds.height);
@@ -278,6 +291,7 @@ class FrameSequence {
     }
     this.bitmaps.clear();
     this.blobs = [];
+    this.canvas.classList.remove('is-ready', 'is-priming');
   }
 }
 
@@ -563,6 +577,20 @@ function initSequenceStory(sequence, lenis) {
   };
 }
 
+function initTouchSequenceStory(sequence) {
+  const trigger = ScrollTrigger.create({
+    trigger: '#vehicle',
+    start: 'top top',
+    end: 'bottom bottom',
+    invalidateOnRefresh: true,
+    onUpdate: (self) => sequence.draw(self.progress * (FRAME_COUNT - 1)).catch(() => {}),
+  });
+
+  trigger.refresh();
+  sequence.draw(trigger.progress * (FRAME_COUNT - 1)).catch(() => {});
+  return () => trigger.kill();
+}
+
 function initSpecAnimations() {
   const introLine = document.querySelector('.specs__intro h2 .line-inner');
   const introCopy = document.querySelector('.specs__intro p');
@@ -704,11 +732,48 @@ async function run() {
   revealHero();
 
   const lenisRuntime = initLenis();
-  const destroyStory = initSequenceStory(sequence, lenisRuntime.lenis);
+  let destroyStory = initSequenceStory(sequence, lenisRuntime.lenis);
   initSpecAnimations();
   initMagnetics();
   initCursor();
   ScrollTrigger.refresh();
+
+  if (touchSequence) {
+    heroCanvas.classList.add('is-priming');
+    sequence = new FrameSequence(heroCanvas, heroPoster, {
+      cacheLimit: TOUCH_FRAME_CACHE_LIMIT,
+      fit: 'contain',
+      mediaScale: 1.12,
+      positionY: 0.6,
+    });
+    sequence
+      .preload(() => {}, TOUCH_SEQUENCE_LOAD_TIMEOUT)
+      .then(async () => {
+        if (window.scrollY > 2) {
+          debugState.mode = 'static-mobile';
+          sequence.destroy();
+          sequence = null;
+          return;
+        }
+
+        document.documentElement.classList.add('has-touch-story');
+        debugState.sequenceReady = true;
+        debugState.mode = 'touch-sequence';
+        destroyStory = initTouchSequenceStory(sequence);
+        ScrollTrigger.refresh();
+        await sequence.draw(0, true);
+        requestAnimationFrame(() => heroCanvas.classList.remove('is-priming'));
+      })
+      .catch((error) => {
+        console.warn('Touch sequence unavailable, keeping poster fallback.', error);
+        debugState.sequenceFailed = true;
+        debugState.mode = 'static-mobile';
+        document.documentElement.classList.remove('has-touch-story');
+        sequence?.destroy();
+        sequence = null;
+        ScrollTrigger.refresh();
+      });
+  }
 
   window.addEventListener(
     'beforeunload',
@@ -724,6 +789,7 @@ async function run() {
 run().catch((error) => {
   console.error('NEVRA experience failed open.', error);
   window.clearTimeout(window.__NEVRA_FAIL_OPEN__);
+  document.documentElement.classList.remove('has-touch-story');
   loader?.remove();
   if (loaderObjectUrl) URL.revokeObjectURL(loaderObjectUrl);
   loaderObjectUrl = null;
