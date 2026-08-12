@@ -90,6 +90,7 @@ canvas {
 
 .skip-link:focus {
   transform: translateY(0);
+  transition-duration: 0s;
 }
 
 .sr-only {
@@ -554,7 +555,7 @@ canvas {
   visibility: visible;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (hover: none), (pointer: coarse) {
   :root {
     --page-pad: max(clamp(1rem, 5vw, 1.5rem), env(safe-area-inset-left), env(safe-area-inset-right));
   }
@@ -563,13 +564,17 @@ canvas {
     min-height: 4.25rem;
   }
 
+  #specs {
+    scroll-margin-top: 0;
+  }
+
   .hero__canvas {
     display: none;
   }
 
   .hero__poster {
     object-fit: contain;
-    object-position: center;
+    object-position: center 60%;
     transform: scale(1.12);
   }
 
@@ -581,7 +586,7 @@ canvas {
 
   .hero__content {
     top: clamp(6.75rem, 15vh, 8.5rem);
-    right: 0;
+    right: var(--page-pad);
     left: var(--page-pad);
   }
 
@@ -591,8 +596,8 @@ canvas {
   }
 
   #hero-title .display-line:last-child {
-    font-size: clamp(0.5em, 9vw, 0.54em);
-    word-spacing: 0.14em;
+    font-size: 0.47em;
+    word-spacing: 0.06em;
   }
 
   .hero__copy {
@@ -612,19 +617,24 @@ canvas {
   }
 
   .specs {
-    padding-top: clamp(6rem, 14vh, 8rem);
+    padding-top: clamp(5rem, 11vh, 6rem);
+    padding-bottom: clamp(4rem, 9vh, 5rem);
   }
 
   .specs__intro {
-    margin-bottom: clamp(5rem, 13vh, 8rem);
+    margin-bottom: clamp(3.5rem, 8vh, 4.5rem);
   }
 
   .specs h2 {
-    font-size: clamp(4rem, 19vw, 6.5rem);
+    font-size: clamp(2.5rem, 12.5vw, 6.5rem);
+  }
+
+  .specs h2 .line-inner {
+    text-wrap: balance;
   }
 
   .spec {
-    min-height: clamp(16rem, 52vh, 26rem);
+    min-height: clamp(11rem, 30vh, 14rem);
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
@@ -641,7 +651,7 @@ canvas {
   }
 
   .site-footer {
-    min-height: 14rem;
+    min-height: 10rem;
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
@@ -667,6 +677,29 @@ canvas {
 @media (orientation: landscape) and (max-height: 500px) {
   .hero__content {
     top: clamp(4.5rem, 18vh, 5.25rem);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  .hero__content {
+    top: clamp(4.25rem, 18vh, 4.75rem);
+    right: auto;
+    width: min(52vw, 29rem);
+  }
+
+  #hero-title {
+    font-size: clamp(3.4rem, 8vw, 4.25rem);
+  }
+
+  #hero-title .display-line:last-child {
+    font-size: 0.5em;
+  }
+
+  .concept-note {
+    right: var(--page-pad);
+    left: auto;
+    max-width: 20rem;
+    text-align: right;
   }
 }
 

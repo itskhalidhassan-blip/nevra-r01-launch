@@ -374,6 +374,7 @@ function exitLoader() {
     gsap
       .timeline({
         onComplete: () => {
+          window.clearTimeout(window.__NEVRA_FAIL_OPEN__);
           debugState.loaderExitMs = Math.round(performance.now() - startedAt);
           debugState.loaderTotalMs = Math.round(
             performance.now() - (window.__NEVRA_LOADER_STARTED_AT__ || startedAt),
@@ -442,6 +443,8 @@ function revealHero() {
 }
 
 function initLenis() {
+  if (!desktopSequence) return { lenis: null, destroy: () => {} };
+
   const lenis = new Lenis({
     duration: 1.2,
     easing: (time) => 1 - Math.pow(1 - time, 4),
@@ -669,6 +672,7 @@ async function run() {
   prepareReveals();
 
   if (reducedMotion) {
+    window.clearTimeout(window.__NEVRA_FAIL_OPEN__);
     loader.remove();
     document.body.classList.remove('is-loading');
     setFinalCounters();
@@ -719,6 +723,7 @@ async function run() {
 
 run().catch((error) => {
   console.error('NEVRA experience failed open.', error);
+  window.clearTimeout(window.__NEVRA_FAIL_OPEN__);
   loader?.remove();
   if (loaderObjectUrl) URL.revokeObjectURL(loaderObjectUrl);
   loaderObjectUrl = null;
