@@ -13,7 +13,6 @@ const EXIT = CustomEase.create('nevraExit', '0.7, 0, 0.84, 0');
 const FRAME_COUNT = 451;
 const FRAME_CACHE_LIMIT = 18;
 const TOUCH_FRAME_CACHE_LIMIT = 6;
-const TOUCH_SEQUENCE_LOAD_TIMEOUT = 12000;
 const IDLE_FRAME_INTERVAL = 1 / 15;
 const IDLE_TICK_TOLERANCE = 0.001;
 const FRAME_MANIFEST_PATH = '/frames/hero/manifest.json';
@@ -22,6 +21,8 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matc
 const desktopSequence = window.matchMedia('(min-width: 768px) and (hover: hover) and (pointer: fine)').matches && !reducedMotion;
 const touchSequence = window.matchMedia('(max-width: 767px), (hover: none), (pointer: coarse)').matches && !reducedMotion;
 const finePointer = window.matchMedia('(pointer: fine)').matches;
+
+if (touchSequence) document.documentElement.classList.add('has-touch-story');
 
 const loader = document.querySelector('#loader');
 const loaderLine = document.querySelector('#loader-line');
@@ -73,11 +74,12 @@ class FrameSequence {
   }
 
   async preload(onProgress, timeoutMs = window.__NEVRA_ASSET_DEADLINE_AT__ - performance.now()) {
-    const remaining = timeoutMs;
-    if (remaining <= 0) throw new Error('Frame preload deadline expired');
+    if (Number.isFinite(timeoutMs) && timeoutMs <= 0) throw new Error('Frame preload deadline expired');
 
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), remaining);
+    const timeout = Number.isFinite(timeoutMs)
+      ? window.setTimeout(() => controller.abort(), timeoutMs)
+      : null;
 
     try {
       const manifestResponse = await fetch(FRAME_MANIFEST_PATH, {
@@ -587,8 +589,11 @@ function initTouchSequenceStory(sequence) {
   });
 
   trigger.refresh();
-  sequence.draw(trigger.progress * (FRAME_COUNT - 1)).catch(() => {});
-  return () => trigger.kill();
+  trigger.update();
+  return {
+    destroy: () => trigger.kill(),
+    ready: sequence.draw(trigger.progress * (FRAME_COUNT - 1), true),
+  };
 }
 
 function initSpecAnimations() {
@@ -747,28 +752,21 @@ async function run() {
       positionY: 0.6,
     });
     sequence
-      .preload(() => {}, TOUCH_SEQUENCE_LOAD_TIMEOUT)
+      .preload(() => {}, null)
       .then(async () => {
-        if (window.scrollY > 2) {
-          debugState.mode = 'static-mobile';
-          sequence.destroy();
-          sequence = null;
-          return;
-        }
-
-        document.documentElement.classList.add('has-touch-story');
+        const touchStory = initTouchSequenceStory(sequence);
+        destroyStory = touchStory.destroy;
+        await touchStory.ready;
         debugState.sequenceReady = true;
         debugState.mode = 'touch-sequence';
-        destroyStory = initTouchSequenceStory(sequence);
-        ScrollTrigger.refresh();
-        await sequence.draw(0, true);
         requestAnimationFrame(() => heroCanvas.classList.remove('is-priming'));
       })
       .catch((error) => {
         console.warn('Touch sequence unavailable, keeping poster fallback.', error);
         debugState.sequenceFailed = true;
         debugState.mode = 'static-mobile';
-        document.documentElement.classList.remove('has-touch-story');
+        destroyStory();
+        destroyStory = () => {};
         sequence?.destroy();
         sequence = null;
         ScrollTrigger.refresh();

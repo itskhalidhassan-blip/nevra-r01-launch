@@ -44,7 +44,10 @@ assert.match(javascript, /function initLenis\(\)[\s\S]*if \(!desktopSequence\)/,
 assert.match(javascript, /FRAME_CACHE_LIMIT = 18/, 'decoded frame cache is bounded');
 assert.match(javascript, /TOUCH_FRAME_CACHE_LIMIT = 6/, 'touch decoded frame cache stays small');
 assert.match(javascript, /function initTouchSequenceStory[\s\S]*end: 'bottom bottom'/, 'touch sequence maps native sticky scroll progress');
-assert.match(javascript, /\.preload\([\s\S]*\.then[\s\S]*classList\.add\('has-touch-story'\)/, 'touch story activates only after its frames load');
+assert.match(javascript, /if \(touchSequence\) document\.documentElement\.classList\.add\('has-touch-story'\)/, 'touch story reserves stable space before frames load');
+assert.match(javascript, /\.preload\(\(\) => \{\}, null\)/, 'touch frame loading remains progressive on slow networks');
+assert.match(javascript, /trigger\.refresh\(\);\s*trigger\.update\(\);[\s\S]*await touchStory\.ready/, 'touch canvas resolves current scroll progress before revealing');
+assert.doesNotMatch(javascript, /window\.scrollY > 2/, 'mobile scrolling must not permanently disable the sequence');
 assert.match(css, /has-touch-story[\s\S]*400svh/, 'touch story reserves stable scroll space');
 assert.ok(javascript.lastIndexOf("document.documentElement.classList.remove('has-touch-story')") > javascript.indexOf('run().catch'), 'global failure collapses the touch story');
 assert.match(javascript, /IDLE_FRAME_INTERVAL = 1 \/ 15/, 'idle orbit runs at the native 15 fps cadence');
